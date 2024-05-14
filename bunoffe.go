@@ -59,6 +59,13 @@ type (
 	// that are passed to one of its methods. Using the realizer has the
 	// same effect of executing a bun query directly.
 	QueryRealizer struct{}
+
+	// Bunoffe is similar to a repository in some ORMs: a set of commonly
+	// used queries.
+	Bunoffe struct {
+		X  Executor
+		DB bun.IDB
+	}
 )
 
 // Exec executes a bun query that has the Exec method. Calling:
@@ -96,4 +103,102 @@ func (QueryRealizer) Scan(ctx context.Context, q ScanQuery, args ...any) error {
 //	query.Exists(ctx)
 func (QueryRealizer) Exists(ctx context.Context, q ExistsQuery) (bool, error) {
 	return q.Exists(ctx)
+}
+
+func (b Bunoffe) ScanWhere(
+	ctx context.Context,
+	model any,
+	cond string,
+	condArgs ...any,
+) error {
+	return b.X.Scan(
+		ctx,
+		b.DB.NewSelect().
+			Model(model).
+			Where(cond, condArgs...),
+	)
+}
+
+func (b Bunoffe) ScanWherePK(ctx context.Context, model any, pks ...string) error {
+	return b.X.Scan(
+		ctx,
+		b.DB.NewSelect().
+			Model(model).
+			WherePK(pks...),
+	)
+}
+
+func (b Bunoffe) SelectWhere(
+	ctx context.Context,
+	model any,
+	cond string,
+	args ...any,
+) (sql.Result, error) {
+	return b.X.Exec(
+		ctx,
+		b.DB.NewSelect().
+			Model(model).
+			Where(cond, args...),
+	)
+}
+
+func (b Bunoffe) SelectWherePK(
+	ctx context.Context,
+	model any,
+	pks ...string,
+) (sql.Result, error) {
+	return b.X.Exec(
+		ctx,
+		b.DB.NewSelect().
+			Model(model).
+			WherePK(pks...),
+	)
+}
+
+func (b Bunoffe) ExistsWhere(
+	ctx context.Context,
+	model any,
+	cond string,
+	condArgs ...any,
+) (bool, error) {
+	return b.X.Exists(
+		ctx,
+		b.DB.NewSelect().
+			Model(model).
+			Where(cond, condArgs...),
+	)
+}
+
+func (b Bunoffe) ExistsWherePK(
+	ctx context.Context,
+	model any,
+	pks ...string,
+) (bool, error) {
+	return b.X.Exists(
+		ctx,
+		b.DB.NewSelect().
+			Model(model).
+			WherePK(pks...),
+	)
+}
+
+func (b Bunoffe) Insert(ctx context.Context, model any) (sql.Result, error) {
+	return b.X.Exec(ctx, b.DB.NewInsert().Model(model))
+}
+
+func (b Bunoffe) Update(ctx context.Context, model any) (sql.Result, error) {
+	return b.X.Exec(ctx, b.DB.NewUpdate().Model(model))
+}
+
+func (b Bunoffe) DeleteWherePK(
+	ctx context.Context,
+	model any,
+	pks ...string,
+) (sql.Result, error) {
+	return b.X.Exec(
+		ctx,
+		b.DB.NewDelete().
+			Model(model).
+			WherePK(pks...),
+	)
 }
